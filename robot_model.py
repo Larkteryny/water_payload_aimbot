@@ -34,7 +34,7 @@ class RobotModel_1Revolute(RobotModel):
 
         return self.traj(effector, vel, target_pos)
 
-    def revolute_to_prismatic(self, start_pos, beta, origin, axis):
+    def revolute_to_prismatic_fixed_axis(self, start_pos, beta, origin, axis):
         """
         simple way of using existing math and tagging on an additional processing step to convert for a fixed-axis linear actuator
 
@@ -42,21 +42,20 @@ class RobotModel_1Revolute(RobotModel):
         :param beta: angle of revolute joint
         :param origin: relative reference point of prismatic actuator
         :param axis: axis vector of the prismatic actuator
+
+        :return: actuator length along direction of axis from origin
         """
 
-        arm1a = self.LINK0_A + beta
-        arm1 = [self.LINK1l * math.cos(arm1a), self.LINK1l * math.sin(arm1a)]
+        link1a = self.LINK0_A + beta
+        link1 = [self.LINK1l * math.cos(link1a), self.LINK1l * math.sin(link1a)]
 
         # Find linear intersection of link1 with axis
-        A = np.column_stack((arm1, -axis))
+        A = np.column_stack((link1, -axis))
         b = origin - start_pos
 
         try:
             t1 = np.linalg.solve(A, b)
-            p = start_pos + t1 * arm1
-            if(p[0] < min(start_pos[0], start_pos[0] + arm1[0]) or p[0] > max(start_pos[0], start_pos[0] + arm1[0]) or
-                p[1] < min(start_pos[1], start_pos[0] + arm1[1]) or p[1] > max(start_pos[1], start_pos[0] + arm1[1])):
-                return None
+            p = start_pos + t1 * link1
 
             direction = -1 if any(x < 0 for x in np.divide((p - origin), axis)) else 1 # should be inf if /0
             return direction * np.linalg.norm(p - origin)
@@ -64,3 +63,21 @@ class RobotModel_1Revolute(RobotModel):
             return None
 
     # TODO: hinged linear actuator, only origin and length matter
+    def revolute_to_prismatic_hinged_point(self, start_pos, beta, origin, link1d):
+        """
+        simple way of using existing math and tagging on an additional processing step to convert for a linear actuator attached to a hinged point on link1
+
+        :param start_pos: relative position of revolute joint (position of LINK0's end NOT its start)
+        :param beta: angle of revolute joint
+        :param origin: relative reference point of prismatic actuator
+        :param link1d: distance along link1 from start_pos that prismatic actuator is attached to
+
+        :return: vector from origin to link1 attachment point
+        """
+
+        link1a = self.LINK0_A + beta
+        intersect = start_pos + [self.LINK1l * math.cos(link1a), self.LINK1l * math.sin(link1a)]
+        lin_actuator = intersect - origin
+
+        # Doesn't do any sanity checks
+        return lin_actuator

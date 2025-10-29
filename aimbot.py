@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     linear_origin = np.array([0.05, 0])
     linear_axis = np.array([-1, -2])
-    distance = model.revolute_to_prismatic(start+ARM0, p[0], linear_origin, linear_axis)
+    distance = model.revolute_to_prismatic_fixed_axis(start+ARM0, p[0], linear_origin, linear_axis)
     print(distance)
 
     scalex = 500
