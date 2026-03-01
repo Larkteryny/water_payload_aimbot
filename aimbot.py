@@ -39,33 +39,37 @@ def newton_raphson():
 if __name__ == "__main__":
     import turtle
 
-    ARM0 = np.array((-0.1, -0.2))
+    ARM0 = np.array((-0.1, -0.1))
     ARM1l = 0.3
     NOZZLE_V = 15
     NOZZLE_A = 10 / 180 * np.pi
-    model = robot.RobotModel_1Revolute(ARM0, ARM1l, NOZZLE_V, NOZZLE_A, traj.ideal_motion_yint)
+    #model = robot.RobotModel_1Revolute_LinkEffector(ARM0, ARM1l, NOZZLE_V, NOZZLE_A, traj.ideal_motion_yint)
+    model = robot.RobotModel_1Revolute_Effector(ARM0, NOZZLE_V, NOZZLE_A, traj.ideal_motion_yint)
 
     start = np.array([0, 0])
-    target = np.array([40, -20])
+    target = np.array([20, -20])
     p = [3*np.pi / 4]
     scales = [0.001]
     rate = 0.001
-    grad_desc(start + ARM0, target, model, p, scales, rate)
-    print(p[0])
+
+    #grad_desc(start + ARM0, target, model, p, scales, rate)
+    #print(p[0])
+    p = model.solve_ideal(start + ARM0, target)
+    print(p)
 
     linear_origin = np.array([0.05, 0])
     linear_axis = np.array([-1, -2])
-    distance = model.revolute_to_prismatic_fixed_axis(start+ARM0, p[0], linear_origin, linear_axis)
-    print(distance)
+    #distance = model.revolute_to_prismatic_fixed_axis(start+ARM0, p[0], linear_origin, linear_axis)
+    #print(distance)
 
-    scalex = 500
-    scaley = 500
+    scalex = 5
+    scaley = 5
     startd = start*[scalex, scaley]
     joint = startd + ARM0*[scalex, scaley]
     arm1a = model.LINK0_A + p[0]
     effectord = joint + [ARM1l * math.cos(arm1a), ARM1l * math.sin(arm1a)] * np.array([scalex, scaley])
     linear_origind = linear_origin*[scalex, scaley]
-    linear_intersect = (linear_origin+distance*linear_axis/np.linalg.norm(linear_axis)) * [scalex, scaley]
+    #linear_intersect = (linear_origin+distance*linear_axis/np.linalg.norm(linear_axis)) * [scalex, scaley]
     print(effectord * [1/scalex, 1/scaley])
     screen = turtle.Screen()
     screen.setup(width=700, height=700)
@@ -74,18 +78,20 @@ if __name__ == "__main__":
     main_turtle.speed(0)
     main_turtle.teleport(float(scalex*target[0]), float(scaley*target[1]))
     main_turtle.dot(10)
-    main_turtle.color("green")
-    main_turtle.teleport(float(linear_origind[0]), float(linear_origind[1]))
-    main_turtle.dot(5)
-    main_turtle.goto(float(linear_intersect[0]), float(linear_intersect[1]))
+    #main_turtle.color("green")
+    #main_turtle.teleport(float(linear_origind[0]), float(linear_origind[1]))
+    #main_turtle.dot(5)
+    #main_turtle.goto(float(linear_intersect[0]), float(linear_intersect[1]))
     main_turtle.color("black")
     main_turtle.teleport(float(startd[0]), float(startd[1]))
     main_turtle.dot(5)
     main_turtle.goto(float(joint[0]), float(joint[1]))
-    main_turtle.goto(float(effectord[0]), float(effectord[1]))
+    #main_turtle.goto(float(effectord[0]), float(effectord[1]))
     main_turtle.color("blue")
     delta = (250 - effectord[0]) / scalex / 20
-    for i in range(20):
-        point = model.calc(start, np.array([3+i*delta, 0]), p[0]) * [scalex, scaley]
-        main_turtle.goto(float(point[0]), float(point[1]))
+    for angle in p:
+        for i in range(20):
+            point = model.calc(start, np.array([3+i*delta, 0]), angle) * [scalex, scaley]
+            main_turtle.goto(float(point[0]), float(point[1]))
+        main_turtle.teleport(float(joint[0]), float(joint[1]))
     input()
